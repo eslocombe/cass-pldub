@@ -182,44 +182,56 @@ div.my-footer-alt {
     <textarea id="source">
 layout: true
 
-<div class="my-footer"><span style="font-size:25px"> 🇧🇪 </span><img src="pics/waffle.png" height="25px" /> productions</div>
+<div class="my-footer"><img src="pics/PLD-17-01.png" height="50px" /></div>
 
 ---
 background-image: url('pics/dolphin-more.jpg')
 background-size: 140%
 
-class: hidefooter 
 
 <br>
 <br>
 <br>
 <br>
 <br>
+# <span style="font-size:48px">Cassandra Administration for MySQL DBAs</span>
 <br>
 <br>
-<br>
-<br>
-### www.mysqlawards.org
-# <span style="font-size:48px">MySQL Community Awards 2017</span>
+### Emily Slocombe
 ???
-Welcome to the 2017 MySQL Community Awards. I am Emily Slocombe and this is Daniel Nichter. We are the co-secretaries of the Awards
+Welcome. I am Emily Slocombe. I work at SurveyMonkey as a Database Infrastructure/Reliability Engineer - mostly of MySQL. 
 ---
 
-# By The Community,
-# &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For The Community.
+# Oh, there are some cassandra databases,
+# &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;they are now yours.
+
+---
+
+# what this talk is about:
 
 <br>
-- Community Contributor
-- Application
-- Corporate Contributor 
+- cqlsh>
+- consistency
+- complaints
+- replication
 
 ???
-The MySQL Community Awards are by the Community and for the Community. Nominations come from the entire MySQL community. The voting committee itself is comprised of past winners.  There are three categories of awards: Community Contributor, Application, and Corporate Contributor
+My first problem was actually finding the machines and figuring out what was where and how users were connecting. The daemon and utilities had been installed by a development team which was either exiting the company, or had already left. They were installed as a reaction to the difficulty in working with a DBA team. Rather than ask for queries to be run or databases to be created, they made their own. 
+
+---
+
+# what this talk is not about:
+
+<br>
+- jmx issues
+- schema design
+- query performance
+- monitoring (just use datadog or prometheus)
+- ♥ of cassandra
 
 ---
 background-image: url(winnerphotos/goblet-crop.png)
 background-size: 100%
-class: hidefooter
 
 # Thank You
 
