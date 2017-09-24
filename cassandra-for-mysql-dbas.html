@@ -29,10 +29,21 @@
         font-family: 'Roboto', sans-serif;
       }
       
-      h1, h2, h3 {
+      h1 {
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
+        margin-bottom: 1px;
+        border-bottom: 1px solid;
+      }
+
+      h2, h3 {
         font-family: 'Roboto', sans-serif;
         font-weight: 400;
         margin-bottom: 0;
+      }
+
+      a {
+        color: orange;
       }       
       
       ul { line-height: 1.4; }
@@ -194,7 +205,7 @@ background-size: 140%
 <br>
 <br>
 <br>
-# <span style="font-size:48px">Cassandra Administration for MySQL DBAs</span>
+<span style="font-size:48px">Cassandra Administration for MySQL DBAs</span>
 <br>
 <br>
 ### Emily Slocombe
@@ -202,14 +213,16 @@ background-size: 140%
 Welcome. I am Emily Slocombe. I work at SurveyMonkey as a Database Infrastructure/Reliability Engineer - mostly of MySQL. 
 ---
 
-# Oh, there are some cassandra databases,
-# &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;they are now yours.
+<br>
+<br>
+<br>
+<br>Oh, there are some cassandra databases,
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;they are now yours.
 
 ---
 
 # what this talk is about:
 
-<br>
 - cqlsh>
 - consistency
 - complaints, user
@@ -222,7 +235,6 @@ My first problem was actually finding the machines and figuring out what was whe
 
 # what this talk is not about:
 
-<br>
 - jmx issues
 - schema design
 - query performance
@@ -230,26 +242,63 @@ My first problem was actually finding the machines and figuring out what was whe
 - ♥ of cassandra
 
 ---
+
 # cqlsh>
 
-<br>
+--
+no, not yet. 
+
+
+---
+
+# first, docs
+
+--
+
+- they are at https://docs.datastax.com
+- we are running:
+```bash
+eslocombe@cqlsh> show version
+[cqlsh 5.0.1 | Cassandra 3.5 | CQL spec 3.4.0 | 
+Native protocol v4]
+```
+--
+- Apache Cassandra 3.0
+
+???
+and immediately I miss mysql. Click on 'Administrator Guide', I am not using DSE.
+NOPE! More like Apache Cassandra 3.5, so click on 
+
+---
+
+# docs 
+
+- https://docs.datastax.com
+- http://cassandra.apache.org/doc/latest/
+- https://marc.info/?l=cassandra-user (best for the biggest problems I've had)
+- a very idle freenode #cassandra
+
+---
+
+# cqlsh>
+
 ok, how do I connect?
 
 ---
-background-image: url(winnerphotos/goblet-crop.png)
-background-size: 100%
 
 # our cqlshrc template
-<hr>
-<div class=remark-inline-code> # ~/.cassandra/cqlshrc
-<br>[authentication]
-<br>username = yourcassusername
-<br>password = yourcasspassword
-<br>
-<br>[connection]
-<br>hostname = thedefaulthost
-<br>request_timeout = 40
-</div>
+
+```bash
+# ~/.cassandra/cqlshrc
+
+[authentication]
+username = yourcassusername
+password = yourcasspassword
+
+[connection]
+hostname = thedefaulthost
+request_timeout = 40
+```
 
 ???
 This is written out by ansible for the dba team, to make things easier
@@ -259,14 +308,16 @@ Typically we use cqlshrc from the actual servers, and not from our local machine
 ---
 
 # common commands:
-<br>
-<div class=remark-inline-code>describe keyspaces;
-<br>describe keyspace nameofkeyspace;
-<br>list roles;
-<br>list all of rolename;
-<br>
-<br>bash$ cqlsh < bunch-of-things.cql > results.txt
-</div>
+
+```bash
+describe keyspaces;
+describe keyspace nameofkeyspace;
+list roles;
+list all of rolename;
+```
+```bash
+bash$ cqlsh < bunch-of-things.cql > results.txt
+```
 
 ???
 separate this into 2 slides? or give the analgous in mysql for the database vs. keyspace and permissions/roles bit
@@ -276,10 +327,15 @@ separate this into 2 slides? or give the analgous in mysql for the database vs. 
 # cqlsh>, but also nodetool
 
 - nodetool, without and with jmx auth (not default to need a pw)
-<br>
-<div class=remark-inline-code>nodetool status
-<br>nodetool  -u cassandra -pwf /etc/super-secrets/jmxremote.password repair -full -pr
-</div>
+
+```bash
+nodetool status
+
+nodetool  -u cassandra -pwf \
+/etc/super-secrets/jmxremote.password \
+repair -full -pr
+```
+- <a href=http://cassandra.apache.org/doc/latest/tools/nodetool/nodetool.html>nodetool</a> can do a lot
 
 ???
 repair should be run if there are deletes to the keyspace. There are mainy options to nodetool repair. It can be run at the keyspace, incrementally or not incrementally, on only the primary range of that node or all nodes. 
@@ -289,10 +345,10 @@ repair should be run if there are deletes to the keyspace. There are mainy optio
 # consistency
 
 --
-<div class=remark-inline-code>
-<br>cqlsh> consistency;
-<br>Current consistency level is ONE.
-</div>
+```bash
+cqlsh> consistency;
+Current consistency level is ONE.
+```
 
 ???
 let's say you want to make sure repairs happen, or that the truncate table you are about to run, actually truncates for real
@@ -301,23 +357,21 @@ you may need to increase the timeout that was set in the cqlshrc
 ---
 
 # consistency
---
-<br>
+
 (check the cluster status for 'UN')
-<div class=remark-inline-code>
-bash$ nodetool status
-</div>
+
+<img src="pics/nodetool.png" width="100%">
+
 ---
 
 # consistency
---
-<br>
-(set session consistency and run your command)
-<div class=remark-inline-code>
-<br> cqlsh> CONSISTENCY ALL;
-<br> cqlsh> truncate table tablename;  
 
-</div>
+(set session consistency and run your command)
+```bash
+cqlsh> CONSISTENCY ALL;
+cqlsh> truncate table tablename;  
+```
+
 ---
 
 # complaints (user, not mine)
@@ -351,10 +405,11 @@ also get the same as mysql questions like: what host do I connect to, what is my
 
 - one permission per grant statement
 --
-<br><div class=remark-inline-code>
-  CREATE ROLE emily WITH PASSWORD = 'trolololo' AND LOGIN = true;
-  <br>GRANT SELECT ON KEYSPACE em TO emily;
-</div>
+
+```sql
+CREATE ROLE emily WITH PASSWORD = 'trolololo' AND LOGIN = true;
+GRANT SELECT ON KEYSPACE em TO emily;
+```
 
 ---
 
@@ -364,11 +419,12 @@ also get the same as mysql questions like: what host do I connect to, what is my
 - but cassandra already uses roles, which is nice
 
 --
-- <div class=remark-inline-code>
-  CREATE ROLE emsteamof1;
-  <br>GRANT MODIFY ON KEYSPACE em TO emsteamof1;
-  <br>GRANT emsteamof1 to emily;
-</div>
+
+```sql
+CREATE ROLE emsteamof1;
+GRANT MODIFY ON KEYSPACE em TO emsteamof1;
+GRANT emsteamof1 to emily;
+```
 - not bad, but it can get ugly
 
 ---
@@ -385,29 +441,29 @@ factors, and consistency
 So, let's say you are used to being able to connect to a replica, running a query, and getting some sort of recent results without hurting the performance of the cluster for your users... all that thinking has to change. 
 
 ---
-
 # replication, and consistency
 
-<br>
-<div class=remark-inline-code>
+- two choices
+  - SimpleStrategy
+  - NetworkTopologyStrategy
+
+```sql
 CREATE KEYSPACE nameofkeyspace WITH replication = 
-<br>  {'class': 'NetworkTopologyStrategy', 
-<br>   'dcname': '3'}  
-<br>  AND durable_writes = true;
-</div>
+  {'class': 'NetworkTopologyStrategy', 
+   'dcname': '3'}  
+  AND durable_writes = true;
+```
 
 ---
-
 # replication, and consistency
 
 friendly suggestion: install Spotify Reaper for your cluster
 
 - automates nodetool repair with more control
 
+---
 
---- 
-
-# bonus! complaints
+# bonus: complaints
 
 my number one complaint: tooling
 
@@ -415,26 +471,35 @@ my number one complaint: tooling
 Honestly, I could get over the annoyances of cassandra if there existed a healthy opensource tooling community around cassandra - like we have for mysql.
 When I got into mysql, I didn't know what I was doing enough to write my own tooling, I used other people's tools. Now, I just occasionally check the Spotify github and hope to find something I can use. 
 
---
+---
 
-# bonus! complaints
+# bonus: complaints
 
 my second complaint: backups and data migratration
 
-- <div class=remark-inline-code>
-  COPY em.geo_ip_lookup (class_b, startip, city, country, endip, latitude, longitude, region) TO '/tmp/em_geo_ip_lookup.csv';
-  (create keyspace on target machine and load the data)
-  <br>COPY em.geo_ip_lookup (class_b, startip, city, country, endip, latitude, longitude, region) FROM '/tmp/em_geo_ip_lookup.csv';
-</div>
+```sql
+COPY em.geo_ip_lookup (class_b, startip, city, \
+   country, endip, latitude, longitude, region) \
+   TO '/tmp/em_geo_ip_lookup.csv';
+```
+  
+```sql
+COPY em.geo_ip_lookup (class_b, startip, city, \
+  country, endip, latitude, longitude, region) \
+  FROM '/tmp/em_geo_ip_lookup.csv';
+```
 - doesn't work for certain datatypes
 
---
+---
 
-- rsync /data from source to dest
-- create keyspace on dest
-- <div class=remark-inline-code>
-  sstableloader  -cph 4 -u eslocombe -pw ${pw} -d $(hostname -s) ${keyspace}
-</div>
+# bonus: complaints
+
+my second complaint: backups and data migratration
+
+```bash
+sstableloader  -cph 4 -u eslocombe \
+  -pw ${pw} -d $(hostname -s) ${keyspace}
+```
 
 ???
 While you can just dump a keyspace to a file, there is not the guarantee that it is consistent
@@ -445,6 +510,14 @@ The real problem is probably mental for me though. I am just from a world where 
 The decentralized data model of nodes, vnodes, and partitioners means that you can lose a node or two, depending on your design, and easily bring in a new node without dataloss. It is my mindset that needs to change.
 
 
+---
+
+# tl;dr
+
+- stop trying to make it work like MySQL
+- accept your fate
+- do your best
+- standardize everything
 
 
 
