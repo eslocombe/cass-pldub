@@ -212,7 +212,7 @@ Welcome. I am Emily Slocombe. I work at SurveyMonkey as a Database Infrastructur
 <br>
 - cqlsh>
 - consistency
-- complaints
+- complaints, user
 - replication
 
 ???
@@ -254,6 +254,196 @@ background-size: 100%
 ???
 This is written out by ansible for the dba team, to make things easier
 Typically we use cqlshrc from the actual servers, and not from our local machines
+
+
+---
+
+# common commands:
+<br>
+<div class=remark-inline-code>describe keyspaces;
+<br>describe keyspace nameofkeyspace;
+<br>list roles;
+<br>list all of rolename;
+<br>
+<br>bash$ cqlsh < bunch-of-things.cql > results.txt
+</div>
+
+???
+separate this into 2 slides? or give the analgous in mysql for the database vs. keyspace and permissions/roles bit
+
+---
+
+# cqlsh>, but also nodetool
+
+- nodetool, without and with jmx auth (not default to need a pw)
+<br>
+<div class=remark-inline-code>nodetool status
+<br>nodetool  -u cassandra -pwf /etc/super-secrets/jmxremote.password repair -full -pr
+</div>
+
+???
+repair should be run if there are deletes to the keyspace. There are mainy options to nodetool repair. It can be run at the keyspace, incrementally or not incrementally, on only the primary range of that node or all nodes. 
+
+---
+
+# consistency
+
+--
+<div class=remark-inline-code>
+<br>cqlsh> consistency;
+<br>Current consistency level is ONE.
+</div>
+
+???
+let's say you want to make sure repairs happen, or that the truncate table you are about to run, actually truncates for real
+you may need to increase the timeout that was set in the cqlshrc
+
+---
+
+# consistency
+--
+<br>
+(check the cluster status for 'UN')
+<div class=remark-inline-code>
+bash$ nodetool status
+</div>
+---
+
+# consistency
+--
+<br>
+(set session consistency and run your command)
+<div class=remark-inline-code>
+<br> cqlsh> CONSISTENCY ALL;
+<br> cqlsh> truncate table tablename;  
+
+</div>
+---
+
+# complaints (user, not mine)
+
+--
+same as MySQL!
+
+--
+ <i>timeouts.</i>
+
+---
+
+# complaints (user, not mine)
+
+<br>timeouts
+<ul>
+ <li>session consistency level?
+ <li>request_timeout in client (10s)
+ <li>indexing / design
+</ul>
+
+???
+also get the same as mysql questions like: what host do I connect to, what is my password, can I connect to other keyspaces, can you grant create/drop also
+
+---
+
+# complaints (user, mine, minor)
+
+- grants.
+--
+
+- one permission per grant statement
+--
+<br><div class=remark-inline-code>
+  CREATE ROLE emily WITH PASSWORD = 'trolololo' AND LOGIN = true;
+  <br>GRANT SELECT ON KEYSPACE em TO emily;
+</div>
+
+---
+
+# complaints (user, mine, minor)
+
+- grants.
+- but cassandra already uses roles, which is nice
+
+--
+- <div class=remark-inline-code>
+  CREATE ROLE emsteamof1;
+  <br>GRANT MODIFY ON KEYSPACE em TO emsteamof1;
+  <br>GRANT emsteamof1 to emily;
+</div>
+- not bad, but it can get ugly
+
+---
+
+# replication
+
+--
+factors, and consistency
+
+--
+<br>Replication is at the <i>keyspace</i> level
+
+???
+So, let's say you are used to being able to connect to a replica, running a query, and getting some sort of recent results without hurting the performance of the cluster for your users... all that thinking has to change. 
+
+---
+
+# replication, and consistency
+
+<br>
+<div class=remark-inline-code>
+CREATE KEYSPACE nameofkeyspace WITH replication = 
+<br>  {'class': 'NetworkTopologyStrategy', 
+<br>   'dcname': '3'}  
+<br>  AND durable_writes = true;
+</div>
+
+---
+
+# replication, and consistency
+
+friendly suggestion: install Spotify Reaper for your cluster
+
+- automates nodetool repair with more control
+
+
+--- 
+
+# bonus! complaints
+
+my number one complaint: tooling
+
+???
+Honestly, I could get over the annoyances of cassandra if there existed a healthy opensource tooling community around cassandra - like we have for mysql.
+When I got into mysql, I didn't know what I was doing enough to write my own tooling, I used other people's tools. Now, I just occasionally check the Spotify github and hope to find something I can use. 
+
+--
+
+# bonus! complaints
+
+my second complaint: backups and data migratration
+
+- <div class=remark-inline-code>
+  COPY em.geo_ip_lookup (class_b, startip, city, country, endip, latitude, longitude, region) TO '/tmp/em_geo_ip_lookup.csv';
+  (create keyspace on target machine and load the data)
+  <br>COPY em.geo_ip_lookup (class_b, startip, city, country, endip, latitude, longitude, region) FROM '/tmp/em_geo_ip_lookup.csv';
+</div>
+- doesn't work for certain datatypes
+
+--
+
+- rsync /data from source to dest
+- create keyspace on dest
+- <div class=remark-inline-code>
+  sstableloader  -cph 4 -u eslocombe -pw ${pw} -d $(hostname -s) ${keyspace}
+</div>
+
+???
+While you can just dump a keyspace to a file, there is not the guarantee that it is consistent
+They say 'just copy the sstables'. Ok, so from which node? all the nodes? Not so convenient. 
+I miss mysqldump and xtrabackup.
+Second option: build a new 'datacenter' and push the data to a singlenode data center and copy those tables
+The real problem is probably mental for me though. I am just from a world where backups are important. I can't seem to let go of them
+The decentralized data model of nodes, vnodes, and partitioners means that you can lose a node or two, depending on your design, and easily bring in a new node without dataloss. It is my mindset that needs to change.
+
 
 
 
