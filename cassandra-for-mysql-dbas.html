@@ -211,6 +211,14 @@ background-size: 140%
 ### Emily Slocombe
 ???
 Welcome. I am Emily Slocombe. I work at SurveyMonkey as a Database Infrastructure/Reliability Engineer - mostly of MySQL. 
+
+---
+
+# Who am I?
+
+- on opensource database team within infrastructure engineering at SurveyMonkey
+- based in Portland, Oregon
+
 ---
 
 <br>
@@ -280,9 +288,46 @@ NOPE! More like Apache Cassandra 3.5, so click on
 
 ---
 
+# definitions:
+
+- `keyspace`
+- `node`
+- `seednode`
+- `vnode`
+- 
+
+---
+
+# definitions:
+
+- `keyspace` ~ database
+- `node`     ~ the server with a cassandra daemon
+- `seednode` ~ host(s) which has the gossip about the cluster topology
+- `vnode`    ~ part of hashing strategy
+- 
+
+
+---
+
 # cqlsh>
 
 ok, how do I connect?
+
+--
+```bash
+eslocombe@p9cstar200yolo1:~$ cqlsh
+```
+--
+```bash
+Connection error: ('Unable to connect to any 
+servers', 
+{'127.0.0.1': error(111, "Tried connecting to 
+[('127.0.0.1', 9042)]. 
+Last error: Connection refused")})
+```
+
+???
+the default installation user/password is cassandra/cassandra. That is the first thing I change. Because I push a .my.cnf to servers and locally, I want cassandra's shell to behave in the same way. I want it just to connect, with minimal thought. For cassandra, I push a cqlshrc to servers
 
 ---
 
@@ -303,11 +348,11 @@ request_timeout = 40
 ???
 This is written out by ansible for the dba team, to make things easier
 Typically we use cqlshrc from the actual servers, and not from our local machines
-
+Your users have connectors which generally get the topology upon connection, and they probably do not need this. 
 
 ---
 
-# common commands:
+# basic cqlsh> commands:
 
 ```bash
 describe keyspaces;
@@ -319,8 +364,63 @@ list all of rolename;
 bash$ cqlsh < bunch-of-things.cql > results.txt
 ```
 
-???
-separate this into 2 slides? or give the analgous in mysql for the database vs. keyspace and permissions/roles bit
+---
+
+# basic cqlsh> commands:
+
+```bash
+eslocombe@cqlsh> describe keyspaces;
+
+system_schema  system           system_traces
+system_auth    emilytest   system_distributed
+```
+
+---
+
+# basic cqlsh> commands:
+
+```sql
+eslocombe@cqlsh> describe keyspace 
+   system_distributed;
+
+CREATE KEYSPACE system_distributed 
+ WITH replication = 
+ {'class': 'SimpleStrategy', 
+  'replication_factor': '3'}  
+ AND durable_writes = true;
+
+CREATE TABLE system_distributed.repair_history (
+    keyspace_name text,
+    columnfamily_name text,
+    id timeuuid,
+...
+
+```
+
+---
+
+# basic cqlsh> commands:
+```sql
+eslocombe@cqlsh> list roles;
+
+ role               | super | login | options
+--------------------+-------+-------+---------
+            blahsvc | False |  True |        {}
+              dba00 |  True |  True |        {}
+              dba01 |  True |  True |        {}
+              dba02 |  True |  True |        {}
+          eslocombe |  True |  True |        {}
+          otherrole | False | False |        {}
+
+(6 rows)
+```
+
+---
+
+# basic cqlsh> commands:
+```sql
+eslocombe@cqlsh> list all of eslocombe;
+```
 
 ---
 
@@ -330,7 +430,8 @@ separate this into 2 slides? or give the analgous in mysql for the database vs. 
 
 ```bash
 nodetool status
-
+```
+```bash
 nodetool  -u cassandra -pwf \
 /etc/super-secrets/jmxremote.password \
 repair -full -pr
@@ -338,7 +439,9 @@ repair -full -pr
 - <a href=http://cassandra.apache.org/doc/latest/tools/nodetool/nodetool.html>nodetool</a> can do a lot
 
 ???
-repair should be run if there are deletes to the keyspace. There are mainy options to nodetool repair. It can be run at the keyspace, incrementally or not incrementally, on only the primary range of that node or all nodes. 
+nodetool status is what I probably run more often than anything else on cassandra machines. We've password protected jmx, so we actually require the password on the command line, or by file reference. I have an example of nodetool status output in a few slides.
+
+repair should be run if there are deletes to the keyspace. There are many options to nodetool repair. It can be run at the keyspace, incrementally or not incrementally, on only the primary range of that node or all nodes. We run it via Spotify Reaper at the keyspace level, at an interval of about 6 days.
 
 ---
 
@@ -351,8 +454,10 @@ Current consistency level is ONE.
 ```
 
 ???
-let's say you want to make sure repairs happen, or that the truncate table you are about to run, actually truncates for real
-you may need to increase the timeout that was set in the cqlshrc
+One of the first major things I had to do for a user, was run truncate on a number of tables. 
+When you run truncate on mysql, you are probably confident that it ran on the replicas as well. In cassandra, I recommend a few extra steps to make sure the data is really truncated everywhere.
+
+Note: you may also need to increase the timeout that was set in the cqlshrc. 
 
 ---
 
@@ -386,19 +491,17 @@ same as MySQL!
 
 # complaints (user, not mine)
 
-<br>timeouts
-<ul>
- <li>session consistency level?
- <li>request_timeout in client (10s)
- <li>indexing / design
-</ul>
+timeouts
+ - session consistency level?
+ - request_timeout in client (10s)
+ - indexing / design
 
 ???
 also get the same as mysql questions like: what host do I connect to, what is my password, can I connect to other keyspaces, can you grant create/drop also
 
 ---
 
-# complaints (user, mine, minor)
+# complaints (mine, minor)
 
 - grants.
 --
@@ -407,13 +510,16 @@ also get the same as mysql questions like: what host do I connect to, what is my
 --
 
 ```sql
-CREATE ROLE emily WITH PASSWORD = 'trolololo' AND LOGIN = true;
+CREATE ROLE emily WITH PASSWORD = 'trolololo'
+  AND LOGIN = true;
 GRANT SELECT ON KEYSPACE em TO emily;
+GRANT ALTER ON KEYSPACE em TO emily;
+...
 ```
 
 ---
 
-# complaints (user, mine, minor)
+# complaints (mine, minor)
 
 - grants.
 - but cassandra already uses roles, which is nice
@@ -454,6 +560,9 @@ CREATE KEYSPACE nameofkeyspace WITH replication =
   AND durable_writes = true;
 ```
 
+???
+I recommend that you ensure NetworkTopologyStrategy is used. It makes growth much easier. SimpleStrategy is only required, as far as I can tell, for one of the system keyspaces.
+
 ---
 # replication, and consistency
 
@@ -475,7 +584,7 @@ When I got into mysql, I didn't know what I was doing enough to write my own too
 
 # bonus: complaints
 
-my second complaint: backups and data migratration
+my second complaint: backups and data migration
 
 ```sql
 COPY em.geo_ip_lookup (class_b, startip, city, \
@@ -494,7 +603,7 @@ COPY em.geo_ip_lookup (class_b, startip, city, \
 
 # bonus: complaints
 
-my second complaint: backups and data migratration
+my second complaint: backups and data migration
 
 ```bash
 sstableloader  -cph 4 -u eslocombe \
@@ -518,6 +627,9 @@ The decentralized data model of nodes, vnodes, and partitioners means that you c
 - accept your fate
 - do your best
 - standardize everything
+
+Slides with notes:
+https://eslocombe.github.io/cass-pldub/cassandra-for-mysql-dbas.html <small><i>hit 'p' for presenter mode with notes</i></small>
 
 
 
