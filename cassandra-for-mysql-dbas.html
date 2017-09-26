@@ -219,6 +219,10 @@ Welcome. I am Emily Slocombe. I work at SurveyMonkey as a Database Infrastructur
 - on opensource database team within infrastructure engineering at SurveyMonkey
 - based in Portland, Oregon
 
+
+???
+My badge technically says I am a 'Senior MySQL DBA', but, obviously, this talk is about cassandra. I am on the /opensource/ database team, and it is also an opensource database... so... 
+
 ---
 
 <br>
@@ -237,7 +241,7 @@ Welcome. I am Emily Slocombe. I work at SurveyMonkey as a Database Infrastructur
 - replication
 
 ???
-My first problem was actually finding the machines and figuring out what was where and how users were connecting. The daemon and utilities had been installed by a development team which was either exiting the company, or had already left. They were installed as a reaction to the difficulty in working with a DBA team. Rather than ask for queries to be run or databases to be created, they made their own. 
+My first problem was actually finding the machines and figuring out what was where and how users were connecting. The daemon and utilities had been installed by a development team which was either exiting the company, or had already left. They were installed as a reaction to the difficulty in working with a DBA team. Rather than ask for queries to be run, they made their own cassandra cluster. 
 
 ---
 
@@ -251,19 +255,10 @@ My first problem was actually finding the machines and figuring out what was whe
 
 ---
 
-# cqlsh>
-
---
-no, not yet. 
-
-
----
-
 # first, docs
 
 --
 
-- they are at https://docs.datastax.com
 - we are running:
 ```bash
 eslocombe@cqlsh> show version
@@ -274,8 +269,8 @@ Native protocol v4]
 - Apache Cassandra 3.0
 
 ???
-and immediately I miss mysql. Click on 'Administrator Guide', I am not using DSE.
-NOPE! More like Apache Cassandra 3.5, so click on 
+You need the docs matching your version
+
 
 ---
 
@@ -286,6 +281,10 @@ NOPE! More like Apache Cassandra 3.5, so click on
 - https://marc.info/?l=cassandra-user (best for the biggest problems I've had)
 - a very idle freenode #cassandra
 
+???
+The datastax docs are often where you will find yourself searching, and for me, they have been frustrating, but they seem to be the most mature. The apache docs are the ones appropriate for the release I am running. They are actually probably best for you, if you are getting started and you have some questions for which you just want answers and don't want to end up with a thousand tabs open in your browser as a result of the rabbit hole that the datastax docs sent you in.
+The cassandra user mailing list was handy for me when I was getting some really bizarre nullpointerexception errors with a fresh cluster I was setting up. 
+
 ---
 
 # definitions:
@@ -294,7 +293,6 @@ NOPE! More like Apache Cassandra 3.5, so click on
 - `node`
 - `seednode`
 - `vnode`
-- 
 
 ---
 
@@ -302,10 +300,8 @@ NOPE! More like Apache Cassandra 3.5, so click on
 
 - `keyspace` ~ database
 - `node`     ~ the server with a cassandra daemon
-- `seednode` ~ host(s) which has the gossip about the cluster topology
+- `seednode` ~ host(s) which has the gossip about the cluster topology for startup
 - `vnode`    ~ part of hashing strategy
-- 
-
 
 ---
 
@@ -471,7 +467,7 @@ Note: you may also need to increase the timeout that was set in the cqlshrc.
 
 # consistency
 
-(set session consistency and run your command)
+(set session <a href="http://cassandra.apache.org/doc/latest/architecture/dynamo.html#tunable-consistency">consistency</a> and run your command)
 ```bash
 cqlsh> CONSISTENCY ALL;
 cqlsh> truncate table tablename;  
