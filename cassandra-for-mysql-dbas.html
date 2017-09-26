@@ -257,6 +257,9 @@ My first problem was actually finding the machines and figuring out what was whe
 
 # first, docs
 
+???
+make sure to use the docs for your version. So, let's check the version I am running:
+
 --
 
 - we are running:
@@ -303,6 +306,9 @@ The cassandra user mailing list was handy for me when I was getting some really 
 - `seednode` ~ host(s) which has the gossip about the cluster topology for startup
 - `vnode`    ~ part of hashing strategy
 
+???
+Again, orient yourself to the theory and architecture with a combination of the apache and datastax documentation. I have had 2 several day trainings and have been doing this nearly exclusively for a year, and I am still not solid on everything. 
+
 ---
 
 # cqlsh>
@@ -313,6 +319,10 @@ ok, how do I connect?
 ```bash
 eslocombe@p9cstar200yolo1:~$ cqlsh
 ```
+
+???
+The result will not be so different as if you attempted to open the mysql shell without any options or a config file
+
 --
 ```bash
 Connection error: ('Unable to connect to any 
@@ -566,15 +576,24 @@ friendly suggestion: install Spotify Reaper for your cluster
 
 - automates nodetool repair with more control
 
+???
+It is one thing you can do, to give your life more sanity. We are running the TLP fork, which still gets improved https://github.com/thelastpickle/cassandra-reaper
+It is far better than relying on anti-entropy repairs to happen on their own - especially if you have a lot of deletes and if, let's say, your user wants to run a bunch of really important ETL jobs on the cluster. 
+
 ---
 
 # bonus: complaints
 
 my number one complaint: tooling
+--
+- <a href="https://github.com/spotify?utf8=%E2%9C%93&q=cassandra&type=&language=">Spotify</a> github
+- <a href="https://github.com/thelastpickle">TLP's</a> github
 
 ???
-Honestly, I could get over the annoyances of cassandra if there existed a healthy opensource tooling community around cassandra - like we have for mysql.
-When I got into mysql, I didn't know what I was doing enough to write my own tooling, I used other people's tools. Now, I just occasionally check the Spotify github and hope to find something I can use. 
+So while on the topic of Spotify Reaper... 
+Honestly, I could get over the annoyances of cassandra if there existed a healthy opensource tooling community around cassandra - like we have for mysql. 
+If you are not using Datastax Enterprise, your options are very limited for tooling. Beyond the costs, I feel much more comfortable using opensource tools.
+In a talk from about a year ago, from Spotify, they talked about how they automate the process of pulling nodes in and out of the cluster with a tool called 'Hecuba2'. https://www.youtube.com/watch?v=BmT3ORGiAVk : I keep watching for the tool on github, and I've not seen it yet.
 
 ---
 
@@ -594,6 +613,9 @@ COPY em.geo_ip_lookup (class_b, startip, city, \
   FROM '/tmp/em_geo_ip_lookup.csv';
 ```
 - doesn't work for certain datatypes
+
+???
+This copies an invidual table to a csv, with named colums. Then the second command would then copy that csv into a new locations
 
 ---
 
@@ -623,11 +645,13 @@ The decentralized data model of nodes, vnodes, and partitioners means that you c
 - accept your fate
 - do your best
 - standardize everything
+- graph something
 
 Slides with notes:
 https://eslocombe.github.io/cass-pldub/cassandra-for-mysql-dbas.html <small><i>hit 'p' for presenter mode with notes</i></small>
 
-
+???
+This is not much different than the approach to mysql administration, with one small exception... Don't try to make it work like MySQL - make it work like Cassandra. 
 
 
     </textarea>
