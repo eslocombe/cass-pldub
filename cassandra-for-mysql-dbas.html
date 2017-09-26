@@ -231,6 +231,12 @@ My badge technically says I am a 'Senior MySQL DBA', but, obviously, this talk i
 <br>Oh, there are some cassandra databases,
 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;they are now yours.
 
+
+???
+At 2 of my last 3 jobs, this has happened to me. It is a database. It is opensource. Give it to the MySQL DBA, since clearly all databases are alike and it should be no big deal. With Cassandra, that is a yes and no. The basic principles apply: try to make sure it performs for your users, the data is as safe as promised, you can recreate the setup if needed, and you have some sort of insight as to what is happening on the cluster. But no, it is not at all like MySQL or even one of the cluster variants. 
+
+At SurveyMonkey, my first problem was actually finding the machines and figuring out what was where and how users were connecting. The daemon and utilities had been installed by a development team which was either exiting the company, or had already left. They were installed as a reaction to the difficulty in working with a DBA team. Rather than ask for queries to be run, they made their own cassandra cluster. 
+
 ---
 
 # what this talk is about:
@@ -239,9 +245,6 @@ My badge technically says I am a 'Senior MySQL DBA', but, obviously, this talk i
 - consistency
 - complaints, user
 - replication
-
-???
-My first problem was actually finding the machines and figuring out what was where and how users were connecting. The daemon and utilities had been installed by a development team which was either exiting the company, or had already left. They were installed as a reaction to the difficulty in working with a DBA team. Rather than ask for queries to be run, they made their own cassandra cluster. 
 
 ---
 
@@ -272,7 +275,7 @@ Native protocol v4]
 - Apache Cassandra 3.0
 
 ???
-You need the docs matching your version
+You need the docs matching your version. The latest I can find on the datastax side is for 3.0, nested under one of the menus.
 
 
 ---
@@ -453,12 +456,6 @@ repair should be run if there are deletes to the keyspace. There are many option
 
 # consistency
 
---
-```bash
-cqlsh> consistency;
-Current consistency level is ONE.
-```
-
 ???
 One of the first major things I had to do for a user, was run truncate on a number of tables. 
 When you run truncate on mysql, you are probably confident that it ran on the replicas as well. In cassandra, I recommend a few extra steps to make sure the data is really truncated everywhere.
@@ -473,6 +470,22 @@ Note: you may also need to increase the timeout that was set in the cqlshrc.
 
 <img src="pics/nodetool.png" width="100%">
 
+???
+So, as I do so often, I quickly check `nodetool status` to see the state of the cluster. I am looking for everything to be 'UN', which means Up and Normal. 
+
+(note, I removed some host-id to save on space on the slide, it is actually about 3x longer)
+
+---
+
+# consistency
+
+```bash
+cqlsh> consistency;
+Current consistency level is ONE.
+```
+???
+in cqlsh, the default consistency is 'ONE', this only means that a single replica needs to respond. That is not good enough for my case, so it needs to change.
+
 ---
 
 # consistency
@@ -480,8 +493,11 @@ Note: you may also need to increase the timeout that was set in the cqlshrc.
 (set session <a href="http://cassandra.apache.org/doc/latest/architecture/dynamo.html#tunable-consistency">consistency</a> and run your command)
 ```bash
 cqlsh> CONSISTENCY ALL;
+cqlsh> use keyspacename;
 cqlsh> truncate table tablename;  
 ```
+???
+I really want truncate to happen, so I will take the option of consistency 'ALL' for my session - which means that all replicas must respond.
 
 ---
 
@@ -550,14 +566,15 @@ factors, and consistency
 <br>Replication is at the <i>keyspace</i> level
 
 ???
-So, let's say you are used to being able to connect to a replica, running a query, and getting some sort of recent results without hurting the performance of the cluster for your users... all that thinking has to change. 
+So, let's say you are used to being able to connect to a replica, running a query, and getting some sort of recent results without hurting the performance of the cluster for your users... all that thinking has to change.  
+First, it is decentralized. You probably won't hurt performance like you could in MySQL. You must also understand that when the keyspace is created, the replication is set up. This replication, has to do with how many copies each row will have across nodes in the cluster. The actual data placement, is related to partitioning and tokens and/or vnodes. 
 
 ---
 # replication, and consistency
 
 - two choices
-  - SimpleStrategy
-  - NetworkTopologyStrategy
+  - `SimpleStrategy`
+  - `NetworkTopologyStrategy`
 
 ```sql
 CREATE KEYSPACE nameofkeyspace WITH replication = 
@@ -567,14 +584,14 @@ CREATE KEYSPACE nameofkeyspace WITH replication =
 ```
 
 ???
-I recommend that you ensure NetworkTopologyStrategy is used. It makes growth much easier. SimpleStrategy is only required, as far as I can tell, for one of the system keyspaces.
+I recommend that you ensure NetworkTopologyStrategy is used. It makes growth much easier. SimpleStrategy is only required, as far as I can tell, for one of the system keyspaces. If your users are creating their own keyspaces, it is probably important to doublecheck the keyspace replication definitions. 
 
 ---
 # replication, and consistency
 
 friendly suggestion: install Spotify Reaper for your cluster
 
-- automates nodetool repair with more control
+- automates `nodetool repair` with more control
 
 ???
 It is one thing you can do, to give your life more sanity. We are running the TLP fork, which still gets improved https://github.com/thelastpickle/cassandra-reaper
@@ -585,15 +602,16 @@ It is far better than relying on anti-entropy repairs to happen on their own - e
 # bonus: complaints
 
 my number one complaint: tooling
+
 --
 - <a href="https://github.com/spotify?utf8=%E2%9C%93&q=cassandra&type=&language=">Spotify</a> github
-- <a href="https://github.com/thelastpickle">TLP's</a> github
+- <a href="https://github.com/thelastpickle">TLP</a> github
 
 ???
 So while on the topic of Spotify Reaper... 
 Honestly, I could get over the annoyances of cassandra if there existed a healthy opensource tooling community around cassandra - like we have for mysql. 
 If you are not using Datastax Enterprise, your options are very limited for tooling. Beyond the costs, I feel much more comfortable using opensource tools.
-In a talk from about a year ago, from Spotify, they talked about how they automate the process of pulling nodes in and out of the cluster with a tool called 'Hecuba2'. https://www.youtube.com/watch?v=BmT3ORGiAVk : I keep watching for the tool on github, and I've not seen it yet.
+In a presentation from about a year ago, from Spotify, they talked about how they automate the process managing cluster topology with a tool called 'Hecuba2'. https://www.youtube.com/watch?v=BmT3ORGiAVk : I keep watching for the tool on github, and I've not seen it yet.
 
 ---
 
@@ -642,13 +660,14 @@ The decentralized data model of nodes, vnodes, and partitioners means that you c
 # tl;dr
 
 - stop trying to make it work like MySQL
-- accept your fate
-- do your best
+- accept your fate & do your best
 - standardize everything
 - graph something
 
 Slides with notes:
-https://eslocombe.github.io/cass-pldub/cassandra-for-mysql-dbas.html <small><i>hit 'p' for presenter mode with notes</i></small>
+https://eslocombe.github.io/cass-pldub/cassandra-for-mysql-dbas.html <small><i>hit 'p' for notes</i></small>
+
+## thank you!
 
 ???
 This is not much different than the approach to mysql administration, with one small exception... Don't try to make it work like MySQL - make it work like Cassandra. 
