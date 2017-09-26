@@ -436,6 +436,7 @@ eslocombe@cqlsh> list roles;
 ```sql
 eslocombe@cqlsh> list all of eslocombe;
 ```
+<img src="pics/userperms.png" width="100%">
 
 ---
 
@@ -639,7 +640,8 @@ COPY em.geo_ip_lookup (class_b, startip, city, \
 - doesn't work for certain datatypes
 
 ???
-This copies an invidual table to a csv, with named colums. Then the second command would then copy that csv into a new locations
+I recently was tasked with 'moving a cluster in one datacenter to a new datacenter' - with the intent of decommissioning the old datacenter. I know how to approach this in MySQL, but everything I was finding for advice on how to do it in cassandra seemed really labor intensive and fraught with problems. There are two basic suggestions that I found "dump and copy the tables" or "copy the ss tables". So, let's examine the first suggestion: dump and reimport the tables from csv. 
+This copies an invidual table to a csv, with named colums. Then the second command would then copy that csv into a new locations. That is a lot of work, plus we have some tables which have datatypes that don't work with this strategy.
 
 ---
 
@@ -655,10 +657,12 @@ sstableloader  -cph 4 -u eslocombe \
 ???
 While you can just dump a keyspace to a file, there is not the guarantee that it is consistent
 They say 'just copy the sstables'. Ok, so from which node? all the nodes? Not so convenient. 
-I miss mysqldump and xtrabackup.
+I miss mysqldump and xtrabackup. So, basically, you go to the data directory and copy all the ss tables from point a to point b. You recreate and empty schema for the keyspaces in question, then you run sstableloader on the target hosts like this. But, you have to consider how the data is distributed across the nodes - which means this works best if you are creating the exact same size cluster and do it for each machine. That is a lot of work! 
 Second option: build a new 'datacenter' and push the data to a singlenode data center and copy those tables
+
 The real problem is probably mental for me though. I am just from a world where backups are important. I can't seem to let go of them
-The decentralized data model of nodes, vnodes, and partitioners means that you can lose a node or two, depending on your design, and easily bring in a new node without dataloss. It is my mindset that needs to change.
+The decentralized data model of nodes, vnodes, and partitioners means that you can lose a node or two, depending on your design, and easily bring in a new node without dataloss. 
+It is my mindset that needs to change.
 
 
 ---
